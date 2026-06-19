@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小朋友落樓梯 修正流暢版</title>
+    <title>小朋友落樓梯 完美流暢版</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,7 +23,7 @@
 </head>
 <body>
 
-    <h1>小朋友落樓梯 (修正版)</h1>
+    <h1>小朋友落樓梯 (完美流暢版)</h1>
     <p>操控方法：用鍵盤 ⬅️ ➡️ 箭頭左右移動</p>
     <h2 id="score-text">層數: 0</h2>
     
@@ -33,7 +33,7 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // 1. 玩家設定 (調低咗重力，加強咗操作反應)
+        // 1. 玩家設定
         let player = {
             x: 190, y: 50,
             width: 20, height: 20,
@@ -43,11 +43,12 @@
             onPlatform: false
         };
 
-        // 2. 樓梯（平台）設定 (放慢咗上升速度)
+        // 2. 樓梯設定
         let platforms = [];
         let platformSpeed = 1.0; 
         let score = 0;
         let gameOver = false;
+        let animationFrameId = null; // 用嚟記住並清除舊嘅動畫迴圈
 
         // 鍵盤狀態監聽
         let keys = { Left: false, Right: false };
@@ -63,10 +64,7 @@
         // 初始化樓梯
         function initPlatforms() {
             platforms = [];
-            // 喺正玩家下面放第一塊安全平台
             platforms.push({ x: 150, y: 150, width: 100, height: 15 });
-            
-            // 隨機生成其餘平台
             for (let i = 1; i < 6; i++) {
                 generatePlatform(i * 85 + 150);
             }
@@ -87,35 +85,26 @@
             else if (keys.Right) player.vx = player.speed;
             else player.vx = 0;
 
-            // 應用重力
             player.vy += player.gravity;
-
-            // 更新玩家位置
             player.x += player.vx;
             player.y += player.vy;
 
-            // 防止玩家走出左右邊界
             if (player.x < 0) player.x = 0;
             if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 
-            // 樓梯向上移動及「精準碰撞檢測」
             player.onPlatform = false;
             platforms.forEach((plat, index) => {
                 plat.y -= platformSpeed;
 
-                // 檢查左右是否有重疊 (X軸碰撞)
                 let insideX = player.x + player.width > plat.x && player.x < plat.x + plat.width;
-                
-                // 檢查對腳係咪踩落樓梯表面 (Y軸頂部碰撞)
                 if (insideX) {
                     if (player.y + player.height >= plat.y && player.y + player.height - player.vy <= plat.y + 8) {
                         player.y = plat.y - player.height;
-                        player.vy = -platformSpeed; // 企定喺樓梯一齊上升
+                        player.vy = -platformSpeed; 
                         player.onPlatform = true;
                     }
                 }
 
-                // 如果樓梯升出頂部，就喺底補返一條新樓梯
                 if (plat.y + plat.height < 0) {
                     platforms.splice(index, 1);
                     generatePlatform(canvas.height);
@@ -125,34 +114,28 @@
             });
 
             // 4. 輸贏判定
-            // 頂部針刺線
             if (player.y <= 10) {
                 endGame("你被夾死咗喇！");
                 return;
             }
-            // 跌落深淵
             if (player.y > canvas.height) {
                 endGame("你跌死咗喇！");
                 return;
             }
 
             draw();
-            requestAnimationFrame(update);
+            // 儲存當前迴圈嘅 ID
+            animationFrameId = requestAnimationFrame(update);
         }
 
-        // 5. 繪圖功能
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 天花板紅線針刺提示
             ctx.fillStyle = "red";
             ctx.fillRect(0, 0, canvas.width, 10);
 
-            // 畫玩家（藍色正方形）
             ctx.fillStyle = "#00bcff";
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
-            // 畫樓梯（綠色長方形）
             ctx.fillStyle = "#4CAF50";
             platforms.forEach(plat => {
                 ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
@@ -161,23 +144,35 @@
 
         function endGame(msg) {
             gameOver = true;
-            alert(msg + " 最終得分: " + score + " 層");
             
-            // 重設所有數值
+            // 重要修正：徹底停低舊嘅遊戲動畫，防止越玩越快
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+
+            // 用 setTimeout 延遲彈出，防止 alert 鎖死畫面導致控制鍵卡住
+            setTimeout(() => {
+                alert(msg + " 最終得分: " + score + " 層");
+                startGame();
+            }, 10);
+        }
+
+        function startGame() {
             player.x = 190; 
             player.y = 50; 
             player.vy = 0;
             score = 0;
             document.getElementById("score-text").innerText = "層數: 0";
+            keys.Left = false;  // 重設按鍵狀態防止卡住
+            keys.Right = false;
             
             gameOver = false;
             initPlatforms();
-            requestAnimationFrame(update);
+            update();
         }
 
         // 啟動遊戲
-        initPlatforms();
-        update();
+        startGame();
     </script>
 
 </body>
