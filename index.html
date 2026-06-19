@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的第一個撳掣遊戲</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin-top: 100px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 20px;
+            cursor: pointer;
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px #999;
+        }
+        button:active {
+            background-color: #e64a19;
+            box-shadow: 0 2px #666;
+            transform: translateY(2px);
+        }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+
+    <h1>撳掣怪獸遊戲</h1>
+    <p>試下狂撳下面個掣嚟賺分數！</p>
+    <h2 id="score-display">分數: 0</h2>
+    
+    <button onclick="increaseScore()">撳我！</button>
+
+    <script>
+        let score = 0;
+        function increaseScore() {
+            score++;
+            document.getElementById("score-display").innerText = "分數: " + score;
+        }
+    </script>
+
+</body>
+</html>
