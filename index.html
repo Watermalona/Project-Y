@@ -23,8 +23,8 @@
 </head>
 <body>
 
-    <h1>毛毛無聊落樓梯</h1>
-    <p>操控方法：用鍵盤 ⬅️ ➡️ 箭頭左右移動</p>
+    <h1>毛毛無聊落樓梯🐱</h1>
+    <p>操控方法：用鍵盤 ⬅️ ➡️ 箭頭控制貓貓移動</p>
     <h2 id="score-text">層數: 0</h2>
     
     <canvas id="gameCanvas" width="400" height="500"></canvas>
@@ -33,14 +33,15 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // 1. 玩家設定
+        // 1. 玩家設定 (配合貓貓形狀，將寬高改成 24 像素)
         let player = {
-            x: 190, y: 50,
-            width: 20, height: 20,
+            x: 188, y: 50,
+            width: 24, height: 24,
             vx: 0, vy: 0,
             speed: 5,
             gravity: 0.25,
-            onPlatform: false
+            onPlatform: false,
+            facing: "right" // 記住貓貓面向邊一邊
         };
 
         // 2. 樓梯設定
@@ -48,13 +49,19 @@
         let platformSpeed = 1.0; 
         let score = 0;
         let gameOver = false;
-        let animationFrameId = null; // 用嚟記住並清除舊嘅動畫迴圈
+        let animationFrameId = null;
 
         // 鍵盤狀態監聽
         let keys = { Left: false, Right: false };
         window.addEventListener("keydown", e => {
-            if (e.key === "ArrowLeft" || e.key === "Left") keys.Left = true;
-            if (e.key === "ArrowRight" || e.key === "Right") keys.Right = true;
+            if (e.key === "ArrowLeft" || e.key === "Left") {
+                keys.Left = true;
+                player.facing = "left"; // 向左行
+            }
+            if (e.key === "ArrowRight" || e.key === "Right") {
+                keys.Right = true;
+                player.facing = "right"; // 向右行
+            }
         });
         window.addEventListener("keyup", e => {
             if (e.key === "ArrowLeft" || e.key === "Left") keys.Left = false;
@@ -80,7 +87,6 @@
         function update() {
             if (gameOver) return;
 
-            // 左右移動控制
             if (keys.Left) player.vx = -player.speed;
             else if (keys.Right) player.vx = player.speed;
             else player.vx = 0;
@@ -113,30 +119,74 @@
                 }
             });
 
-            // 4. 輸贏判定
             if (player.y <= 10) {
-                endGame("你被夾死咗喇！");
+                endGame("夾死咗喇！😭");
                 return;
             }
             if (player.y > canvas.height) {
-                endGame("你跌死咗喇！");
+                endGame("跌死咗喇！😭");
                 return;
             }
 
             draw();
-            // 儲存當前迴圈嘅 ID
             animationFrameId = requestAnimationFrame(update);
         }
 
+        // 5. 繪圖功能：喺度將藍色正方形換成黃色貓貓 🐱
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 天花板紅線針刺提示
             ctx.fillStyle = "red";
             ctx.fillRect(0, 0, canvas.width, 10);
 
-            ctx.fillStyle = "#00bcff";
-            ctx.fillRect(player.x, player.y, player.width, player.height);
+            // ---- 開始畫貓貓 ----
+            let centerX = player.x + player.width / 2;
+            let centerY = player.y + player.height / 2;
+            let radius = player.width / 2;
 
-            ctx.fillStyle = "#4CAF50";
+            // 畫左邊貓耳
+            ctx.fillStyle = "#FFCA28"; // 貓貓鮮黃色
+            ctx.beginPath();
+            ctx.moveTo(centerX - radius, centerY - radius + 5);
+            ctx.lineTo(centerX - radius - 2, centerY - radius - 6); // 耳尖
+            ctx.lineTo(centerX - 2, centerY - radius + 2);
+            ctx.fill();
+
+            // 畫右邊貓耳
+            ctx.beginPath();
+            ctx.moveTo(centerX + radius, centerY - radius + 5);
+            ctx.lineTo(centerX + radius + 2, centerY - radius - 6); // 耳尖
+            ctx.lineTo(centerX + 2, centerY - radius + 2);
+            ctx.fill();
+
+            // 畫貓貓面部（大圓形）
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 畫貓貓眼睛（黑色）
+            ctx.fillStyle = "#000000";
+            let eyeOffsetX = player.facing === "left" ? -4 : 2; // 根據移動方向調整眼神
+            
+            // 左眼
+            ctx.beginPath();
+            ctx.arc(centerX - 4 + eyeOffsetX, centerY - 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+            // 右眼
+            ctx.beginPath();
+            ctx.arc(centerX + 4 + eyeOffsetX, centerY - 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 畫貓貓細粉紅鼻
+            ctx.fillStyle = "#FF8A80";
+            ctx.beginPath();
+            ctx.arc(centerX + (player.facing === "left" ? -2 : 1), centerY + 2, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            // ---- 貓貓畫完 ----
+
+            // 畫樓梯（Blue長方形）
+            ctx.fillStyle = "#2596be";
             platforms.forEach(plat => {
                 ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
             });
@@ -144,13 +194,9 @@
 
         function endGame(msg) {
             gameOver = true;
-            
-            // 重要修正：徹底停低舊嘅遊戲動畫，防止越玩越快
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
             }
-
-            // 用 setTimeout 延遲彈出，防止 alert 鎖死畫面導致控制鍵卡住
             setTimeout(() => {
                 alert(msg + " 最終得分: " + score + " 層");
                 startGame();
@@ -158,12 +204,13 @@
         }
 
         function startGame() {
-            player.x = 190; 
+            player.x = 188; 
             player.y = 50; 
             player.vy = 0;
             score = 0;
+            player.facing = "right";
             document.getElementById("score-text").innerText = "層數: 0";
-            keys.Left = false;  // 重設按鍵狀態防止卡住
+            keys.Left = false;
             keys.Right = false;
             
             gameOver = false;
@@ -171,7 +218,6 @@
             update();
         }
 
-        // 啟動遊戲
         startGame();
     </script>
 
